@@ -406,6 +406,59 @@ This can be used to work around bugs in servers
 (and possibly \fBmbsync\fR itself).
 (Default: empty)
 ..
+.TP
+\fBCompression\fR \fByes\fR|\fBno\fR
+Whether to use compression. Using it recommended, and enabled by
+default if mbsync is compiled with zlib support.
+.sp
+This is primarily intended for debugging potential issues such as the
+"Error decompressing data from <host>" error.
+.sp
+To see what's going on in plain-text with an SSL-enabled IMAP
+connection use this in conjunction with stunnel(1). E.g. by
+configuring it like this:
+.sp
+.in +4
+.nf
+$ cat ~/.mbsyncrc.stunnel
+# Don't fork, stay in the foreground
+foreground = yes
+# Turn on verbose debugging. Can also "info" etc.
+debug = debug
+# Don't try to write a pid file. Makes it simple to run this without
+# chroot or sudo.
+pid =
+[mbsync-imap-ssl-tunnel]
+# Don't do local SSL, but local -> remote SSL.
+client = yes
+accept = 127.0.0.1:1430
+connect = imap.booking.com:993
+# This means do lazy DNS lookups, not on startup, in case our network
+# changes.
+delay = yes
+.fi
+.sp
+.in -4
+And start it with:
+.sp
+.in +4
+.nf
+$ stunnel ~/.mbsyncrc.stunnel
+.fi
+.in -4
+.sp
+Then you can disable compression (or not!) and sniff all the traffic
+on localhost:1430 with e.g. tcpflow(1) to see the raw IMAP traffic
+going over the wire:
+.sp
+.in +4
+.nf
+$ sudo tcpflow -i lo -c port 1430
+.fi
+.in -4
+.sp
+(Default: \fByes\fR)
+..
 .SS IMAP Stores
 The reference point for relative \fBPath\fRs is whatever the server likes it
 to be; probably the user's $HOME or $HOME/Mail on that server. The location

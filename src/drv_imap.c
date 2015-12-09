@@ -58,6 +58,9 @@ typedef struct imap_server_conf {
 #ifdef HAVE_LIBSSL
 	char ssl_type;
 #endif
+#ifdef HAVE_LIBZ
+	char compression;
+#endif
 	char failed;
 } imap_server_conf_t;
 
@@ -2073,7 +2076,9 @@ static void
 imap_open_store_compress( imap_store_t *ctx )
 {
 #ifdef HAVE_LIBZ
-	if (CAP(COMPRESS_DEFLATE)) {
+	imap_store_conf_t *cfg = (imap_store_conf_t *)ctx->gen.conf;
+	imap_server_conf_t *srvc = cfg->server;
+	if (srvc->compression && CAP(COMPRESS_DEFLATE)) {
 		imap_exec( ctx, 0, imap_open_store_compress_p2, "COMPRESS DEFLATE" );
 		return;
 	}
@@ -2722,6 +2727,9 @@ imap_parse_store( conffile_t *cfg, store_conf_t **storep )
 	server->sconf.system_certs = 1;
 #endif
 	server->max_in_progress = INT_MAX;
+#ifdef HAVE_LIBZ
+	server->compression = -1;
+#endif
 
 	while (getcline( cfg ) && cfg->cmd) {
 		if (!strcasecmp( "Host", cfg->cmd )) {
@@ -2842,6 +2850,10 @@ imap_parse_store( conffile_t *cfg, store_conf_t **storep )
 			use_tlsv11 = parse_bool( cfg );
 		else if (!strcasecmp( "UseTLSv1.2", cfg->cmd ))
 			use_tlsv12 = parse_bool( cfg );
+#endif
+#ifdef HAVE_LIBZ
+		else if (!strcasecmp( "Compression", cfg->cmd )) 
+			server->compression = parse_bool( cfg );
 #endif
 		else if (!strcasecmp( "AuthMech", cfg->cmd ) ||
 		         !strcasecmp( "AuthMechs", cfg->cmd )) {
